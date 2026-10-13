@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, type FormEvent, type ReactNode } from 'react'
 import { TITLE_MAX_LENGTH } from '@/entities/booking'
 import { formatDuration, formatLongDate, toMinutes } from '@/shared/lib/time'
 import { Alert, Button, Modal, Select } from '@/shared/ui'
-import type { BookingFormModel } from '../model/useBookingForm'
+import type { BookingFormModel } from '../../model/useBookingForm'
 
 type Props = {
   form: BookingFormModel

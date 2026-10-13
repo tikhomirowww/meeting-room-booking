@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Booking } from '@/entities/booking'
 import { getErrorMessage } from '@/shared/api'
 import { Alert, Button, Modal, toast } from '@/shared/ui'
-import { useDeleteBooking } from '../model/useDeleteBooking'
+import { useDeleteBooking } from '../../model/useDeleteBooking'
 
 type Props = { booking: Booking; onDeleted: () => void }
 

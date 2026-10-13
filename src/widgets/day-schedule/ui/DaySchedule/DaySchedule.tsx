@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react'
 import { getErrorMessage } from '@/shared/api'
 import { Alert, Button, Spinner } from '@/shared/ui'
-import { Timeline } from './Timeline'
+import { Timeline } from '../Timeline'
 
 type Props = ComponentProps<typeof Timeline> & {
   status: 'pending' | 'error' | 'success'

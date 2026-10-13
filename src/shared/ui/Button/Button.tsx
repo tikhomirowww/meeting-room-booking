@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react'
-import { Spinner } from './Spinner'
+import { Spinner } from '../Spinner'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'destructive' | 'ghost'
 
