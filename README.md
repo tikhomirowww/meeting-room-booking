@@ -111,6 +111,7 @@ Beyond the spec, this is what I'd do next for a real product:
 - **Multiple rooms.** Add `roomId` to `Booking` and to the query key, narrow overlap checks to the same room, and add `entities/room` + `features/room-select`. The timeline and all error handling stay the same. If rooms need different hours or duration limits, the global constants in `shared/config` become a per-room `BookingPolicy` passed to the rules through the existing context argument.
 - **Live updates.** Push changes over SSE/WebSocket so other users' bookings appear without a refetch. This makes `409` conflicts rarer, though the server check is still required.
 - **Drag to create and resize on the timeline.** Faster for mouse users, but it needs a keyboard alternative (WCAG 2.5.7), which the form already provides, and it must not fight with scrolling on touch devices.
+- **Branded `IsoDate` / `HhMm` types.** These are aliases of `string` today, so the compiler wouldn't stop a date being passed where a time is expected. Formats are enforced at runtime by `validateBooking` on both client and server. Brands with parsers at the boundaries (form inputs, API responses) would move that to compile time. It was deferred because every string literal and form value would need a parse or a cast.
 - **Recurring bookings and invitations.** New features built on the same validation rules.
 
 ## Time spent

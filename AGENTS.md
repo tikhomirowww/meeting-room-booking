@@ -38,7 +38,7 @@ npm run build   # production build
 5. **A 409 keeps the user's input.** Show a dialog and refetch, but never reset the form on errors.
 6. **Started or past bookings are read-only**, on the client and on the server (ADR-0005).
 7. **The network layer knows nothing about the UI.** It throws `ApiError`/`NetworkError`, and components decide how to present them.
-8. **FSD imports go downward only**, through a slice's `index.ts`. Same-layer slices don't import each other.
+8. **FSD imports go downward only**, through a slice's `index.ts`. Same-layer slices don't import each other. Deliberate exceptions, outside the app layers: `mocks/` imports `@/entities/booking/model` directly so the mock server doesn't pull in React Query, and tests may import a slice's internals (e.g. `toastStore`) to observe behavior.
 
 ## Conventions
 
