@@ -54,6 +54,17 @@ When a lesson is seen **twice**, or is critical, promote it:
 
 Mark the lesson `Promoted → <where>` and keep it, so the history stays.
 
+## Keeping the log small
+
+`lessons.md` is required reading for every task, so its size is a recurring context cost. Keep it to **about 15 active lessons**.
+
+A lesson moves to [`lessons-archive.md`](lessons-archive.md), keeping its number, when either:
+
+- **it's machine-guarded and quiet:** its guard is automated (a test, lint rule, hook or CI check, not a doc) and it hasn't recurred for 30 days; or
+- **it's stale:** the code or tool it describes no longer exists.
+
+A recurrence brings an archived lesson back to `lessons.md` with `Seen` incremented. `/reflect` proposes archive moves. Agents read the archive only on demand.
+
 ## Reflection
 
 Run `/reflect` (Claude Code: `.claude/commands/reflect.md`; other agents: follow the same steps) at the end of a task or a working session. It reviews recent commits against `lessons.md`, proposes new lessons and promotions, and flags stale ones. Changes to `lessons.md` go through review like code.

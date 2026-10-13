@@ -39,6 +39,8 @@ Test helpers live in `src/test/`: `setup.ts` (jest-dom, cleanup, jsdom polyfills
 
 Determinism: unit tests inject "now"; e2e freezes the page clock at `2030-05-15T10:05Z` (UTC), and since the mock server runs in the page, UI and server share that "now". Each e2e test gets a fresh browser context, so it starts from a fresh seed.
 
+**Architecture rules are tested, not just configured.** Import boundaries and model purity are checked by `scripts/check-boundaries.mjs`, and its probe tests (`scripts/check-boundaries.test.ts`) assert that every known bypass is rejected and legitimate imports pass. Hand-probing glob patterns failed twice (L-013), which is why these are now automated tests.
+
 **Mutation-check new guards.** When a test is meant to prevent a bug, break the code once, watch the test fail, then restore (see L-011). Restore from a backup copy, not with `git checkout`, which would also throw away uncommitted work in that file (L-012).
 
 ## In the browser

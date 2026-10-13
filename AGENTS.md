@@ -12,7 +12,7 @@ Read these before changing code. They're short.
 
 | Doc | Read when |
 |---|---|
-| [docs/ai/lessons.md](docs/ai/lessons.md) | **Always.** Mistakes already made here and how they're prevented |
+| [docs/ai/lessons.md](docs/ai/lessons.md) | **Always.** Active lessons: mistakes already made here and how they're prevented. Older, machine-guarded ones are in `lessons-archive.md`; search it on demand |
 | [docs/architecture.md](docs/architecture.md) | Always. Layers, import rules, data flow, where to change what, recipes |
 | [docs/business-rules.md](docs/business-rules.md) | Touching validation, time options, the form or the mock server |
 | [docs/verification.md](docs/verification.md) | Before saying a task is done. Browser scenarios, accessibility, testing pitfalls |
@@ -40,6 +40,24 @@ npm run build   # production build
 7. **The network layer knows nothing about the UI.** It throws `ApiError`/`NetworkError`, and components decide how to present them.
 8. **FSD imports go downward only**, through a slice's `index.ts`. Same-layer slices don't import each other. Deliberate exceptions, outside the app layers: `mocks/` imports `@/entities/booking/model` directly so the mock server doesn't pull in React Query, and tests may import a slice's internals (e.g. `toastStore`) to observe behavior.
 
+## What machines enforce
+
+Text can be ignored, so the rules that matter most are also checked by tools.
+
+| Rule | Enforced by | When |
+|---|---|---|
+| Invariant 2: business rules are pure. A model file (`entities/*/model/*.ts`) may import **only** `shared/config`, `shared/lib/*` and its own folder (allowlist); `Date` is a type only (no `new Date`, `Date.now`); no `fetch`, `window`, `document`, storage | `scripts/check-boundaries.mjs` (imports and `Date`) + `no-restricted-globals` in `.oxlintrc.json` | lint, edit hook |
+| Invariant 8: FSD imports go downward, through public APIs (`index.ts`, `shared/<segment>`, `shared/lib/<name>`); no same-layer slices; only `features/mock-controls` may import `mocks/`; nothing imports `test/` | `scripts/check-boundaries.mjs` resolves every `@/` **and relative** import to a real path, so there are no glob patterns to get wrong | lint, edit hook |
+| The checker itself catches every known bypass | 36+ probe tests in `scripts/check-boundaries.test.ts` (alias, relative, deep, upward, same-layer, mocks, `Date`), mutation-checked | check, CI |
+| No lint warnings left behind | `oxlint --deny-warnings` in `npm run check` | check, CI |
+| Lint errors are fixed immediately | Claude Code **PostToolUse hook** (`.claude/hooks/lint-edited-file.sh`) lints each edited `.ts`/`.tsx` file and sends errors back | every Edit/Write |
+| Definition of done: `npm run check` passes before finishing | Claude Code **Stop hook** (`.claude/hooks/check-before-stop.sh`) blocks finishing while it fails (one retry, then it reports instead of looping) | end of every turn with uncommitted code changes |
+| Business rules, API contract, UI behavior, accessibility | Vitest + Playwright + axe | check, e2e, CI |
+
+Routine read-only and test commands are pre-allowed in `.claude/settings.json`, so they don't prompt.
+
+**Known limits.** The checker covers `src/` only, not `e2e/` or `scripts/`. Tests are exempt by design. The hooks need `jq` and fail loudly without it. The Stop hook runs only when code has uncommitted changes, and it skips if nothing changed since the last passing check. Everything else in this file is convention. When a convention keeps being broken, promote it into this table (see the memory guide).
+
 ## Conventions
 
 - Everything is in **English**: code, UI text, comments, commits.
@@ -65,6 +83,7 @@ npm run build   # production build
 - `noUncheckedIndexedAccess` is on, so `arr[0]` is `T | undefined`.
 - e2e freezes time at `2030-05-15T10:05Z` (`e2e/fixtures.ts`), and the seed is relative to it. Use `{ exact: true }` for short label names (L-007).
 - Mock handler paths are host-agnostic (`*/api/...`) so they match in the browser and in Node (`msw/node` contract tests).
+- A new kind of import rule goes into `scripts/check-boundaries.mjs` **with a probe test** that proves it rejects the violation (L-013).
 - Integration tests call `setupMockApi()` from `src/test/server.ts`: the mock API runs in Node, data is reset and `Date` is frozen at `NOW` for each test. jsdom lacks `dialog.showModal`, `matchMedia` and `scrollIntoView`, which are polyfilled in `src/test/setup.ts`.
 
 ## Memory and self-reflection

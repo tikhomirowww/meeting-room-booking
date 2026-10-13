@@ -39,7 +39,7 @@ These lessons come from building this project. Each one names the guard that now
 - **What happened:** The "error on next load" demo never showed the error state. TanStack Query retried the `500`, and the retry succeeded because the flag had already been consumed.
 - **Root cause:** The retry policy (5xx retried once) wasn't considered when designing the demo.
 - **Rule:** When simulating failures, account for every retry layer, so failures must persist while enabled.
-- **Guard:** `readsFail` in `src/mocks/controls.ts` is persistent by design and documented under Gotchas in `AGENTS.md`. _Doc-only, no automated test._
+- **Guard:** integration test `src/app/providers/QueryProvider.test.tsx` → "L-004: a persistent 5xx is retried once and the error stays visible". It's mutation-checked: making `readsFail` one-shot again fails it.
 - **Seen:** 2026-10-13 (×1)
 
 ### L-005: A hard reload bypasses the service worker
@@ -112,5 +112,15 @@ These lessons come from building this project. Each one names the guard that now
 - **What happened:** After mutation-checking `BookingForm`, the file was restored with `git checkout`. That reverted it to the staged version, which predated an uncommitted import fix (`../model` → `../../model`) made after moving the component into its own folder. Typecheck and the production build broke, and only the e2e web server start revealed it.
 - **Root cause:** `git checkout <file>` restores from the index, not from "the state just before my mutation".
 - **Rule:** Before mutating, copy the file (or commit first), and restore from that copy. After restoring, run `npm run check` (it includes `tsc -b`), not just the targeted test.
-- **Guard:** The mutation-check note in `docs/verification.md`. _Doc-only._
+- **Guard:** The Claude Code **Stop hook** (`.claude/hooks/check-before-stop.sh`) runs `npm run check`, which includes `tsc -b`, before the agent can finish. It would have caught this broken import, as would CI. There's also the mutation-check note in `docs/verification.md`.
 - **Seen:** 2026-10-13 (×1)
+
+### L-013: In import patterns, `*` doesn't cross a `/`
+
+- **Area:** tooling
+- **What happened:** New FSD lint rules used patterns like `@/entities*` and `@/mocks*`. Mutation probes showed that `shared` importing `@/entities/booking`, and a feature importing `@/mocks/db`, both passed. `no-restricted-imports` uses gitignore-style globs, where `*` stops at `/`.
+- **Root cause:** It was assumed that a glob `*` matches any characters.
+- **Rule:** To ban a module and everything under it, list both `@/x` and `@/x/**`. Probe every new lint rule with a deliberately violating file.
+- **Recurred (×2):** A reviewer re-ran the probes. The fix had only rewritten patterns shaped like `@/word*`, so `@/shared/api*` and `../api*` in the `rules.ts` override were still broken: `@/shared/api/http` and `../api/bookingApi` passed. The earlier claim "all rules were probed" was false, because `rules.ts` had been probed with a single import. Relative paths (`../../../mocks/db`) bypassed every rule, since the patterns covered only `@/`.
+- **Guard:** **Promoted →** glob patterns were replaced by `scripts/check-boundaries.mjs`, which resolves each import to a real path. Model files use an allowlist instead of a denylist. 36+ probe tests in `scripts/check-boundaries.test.ts` cover every bypass found so far and run in `npm run check` and CI. The checker was mutation-checked: disabling relative-path resolution fails the probes.
+- **Seen:** 2026-10-13 (×2)

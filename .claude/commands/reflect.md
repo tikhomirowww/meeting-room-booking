@@ -21,6 +21,7 @@ Scope: commits since `$ARGUMENTS` (default: `1 day ago`), plus the current conve
    - **Recurrence:** it matches an existing lesson. Increment `Seen`, and if it's now ×2, propose a promotion.
    - **Missing guard:** a lesson whose guard is only a note. Propose a test, check or code change.
    - **Stale:** a lesson whose guard no longer exists or whose code was removed.
+   - **Archive candidate:** machine-guarded and quiet for 30 days, or stale. Propose moving it to `docs/ai/lessons-archive.md` with its number kept (see "Keeping the log small" in the memory guide).
 4. **Verify guards exist.** For every lesson you touch, confirm the named file or test actually exists (`grep` or open it). Don't record a guard you haven't seen.
 5. **Propose, then apply.** Show a short table (finding → action → file). Apply changes to `docs/ai/lessons.md` (and `AGENTS.md` or `docs/adr/` for promotions) only after the user agrees, or immediately if they asked you to run without confirmation.
 6. **Report** in three or four lines: what was learned, what is now guarded, and what still relies on memory alone.
