@@ -7,7 +7,7 @@ export function DateNavigator({ date, now, onChange }: Props) {
   const today = toIsoDate(now)
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <nav aria-label="Choose day" className="flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-1">
         <Button variant="secondary" onClick={() => onChange(addDays(date, -1))} aria-label="Previous day" className="px-3">
           ←
@@ -31,6 +31,6 @@ export function DateNavigator({ date, now, onChange }: Props) {
       <p className="w-full text-xl font-semibold first-letter:uppercase sm:ml-2 sm:w-auto" aria-live="polite">
         {formatLongDate(date)}
       </p>
-    </div>
+    </nav>
   )
 }

@@ -66,7 +66,6 @@ export function Timeline({
         <ul aria-label="Free time">
           {slots.map((m) => {
             const start = firstAvailableIn(m)
-            const label = `${fromMinutes(m)}–${fromMinutes(m + SLOT_MINUTES)}`
             return (
               <li
                 key={m}
@@ -77,10 +76,11 @@ export function Timeline({
                   <button
                     type="button"
                     onClick={() => onSelectSlot(start)}
-                    aria-label={`Book from ${start}`}
                     className="group size-full bg-white text-left text-xs text-transparent hover:bg-indigo-50 hover:text-indigo-700 focus-visible:bg-indigo-50 focus-visible:text-indigo-700"
                   >
-                    <span className="pl-3">+ {start === fromMinutes(m) ? label : `from ${start}`}</span>
+                    <span className="pl-3">
+                      <span aria-hidden="true">+ </span>Book from {start}
+                    </span>
                   </button>
                 )}
               </li>
@@ -109,7 +109,6 @@ export function Timeline({
             const locked = isBookingLocked(b, now)
             const selected = b.id === selectedId
             const height = top(b.end) - top(b.start)
-            const text = `${b.start}–${b.end}${b.title ? ` · ${b.title}` : ''}`
             return (
               <li key={b.id} className="absolute inset-x-1" style={{ top: top(b.start) + 1, height: height - 2 }}>
                 <button
@@ -117,8 +116,7 @@ export function Timeline({
                   disabled={locked}
                   onClick={() => onSelectBooking(b)}
                   aria-pressed={selected}
-                  aria-label={`${text}${locked ? ' (already started — cannot be changed)' : ', edit'}`}
-                  className={`flex size-full flex-col overflow-hidden rounded-md px-3 py-1 text-left text-xs ring-1 transition-colors ${
+                  className={`flex size-full flex-col overflow-hidden rounded-md px-3 py-1 text-left text-xs ring-1 ${
                     locked
                       ? 'cursor-default bg-slate-200 text-slate-500 ring-slate-300'
                       : selected
@@ -129,7 +127,13 @@ export function Timeline({
                   <span className="font-semibold">
                     {b.start}–{b.end}
                   </span>
-                  {b.title && height > 30 && <span className="truncate">{b.title}</span>}
+                  {b.title && (
+                    <span className="truncate">
+                      <span className="sr-only">, </span>
+                      {b.title}
+                    </span>
+                  )}
+                  <span className="sr-only">{locked ? ', already started, read-only' : ', edit'}</span>
                 </button>
               </li>
             )
