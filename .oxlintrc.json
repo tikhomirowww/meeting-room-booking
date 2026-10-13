@@ -1,8 +1,58 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
+  "plugins": [
+    "react",
+    "typescript",
+    "oxc"
+  ],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/entities/*/model/*.ts"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "Invariant 2: rules are pure, so no network."
+          },
+          {
+            "name": "window",
+            "message": "Invariant 2: rules are pure, so no browser globals."
+          },
+          {
+            "name": "document",
+            "message": "Invariant 2: rules are pure, so no browser globals."
+          },
+          {
+            "name": "localStorage",
+            "message": "Invariant 2: rules are pure, so no storage."
+          },
+          {
+            "name": "sessionStorage",
+            "message": "Invariant 2: rules are pure, so no storage."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ],
+      "rules": {
+        "no-restricted-globals": "off"
+      }
+    }
+  ]
 }

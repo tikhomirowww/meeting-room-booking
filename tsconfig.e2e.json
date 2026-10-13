@@ -12,5 +12,5 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force"
   },
-  "include": ["e2e", "playwright.config.ts"]
+  "include": ["e2e", "playwright.config.ts", "scripts"]
 }

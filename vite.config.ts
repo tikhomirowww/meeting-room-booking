@@ -12,7 +12,7 @@ export default defineConfig({
     env: { VITE_API_URL: 'http://localhost' },
     projects: [
       // Pure logic: fast, no DOM.
-      { extends: true, test: { name: 'unit', environment: 'node', include: ['src/**/*.test.ts'] } },
+      { extends: true, test: { name: 'unit', environment: 'node', include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'] } },
       // Components, hooks and integration tests.
       {
         extends: true,

@@ -6,11 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "lint": "oxlint --deny-warnings src e2e scripts && node scripts/check-boundaries.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "check": "tsc -b && oxlint src e2e && vitest run",
+    "check": "tsc -b && npm run lint --silent && vitest run",
     "e2e": "playwright test"
   },
   "dependencies": {
