@@ -16,6 +16,12 @@ export function BookingPage() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-10">
+      <a
+        href="#booking-form"
+        className="sr-only rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50"
+      >
+        Skip to booking form
+      </a>
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight">Meeting room</h1>
         <p className="text-sm text-slate-500">
@@ -68,7 +74,7 @@ function BookingDay({ date, now }: { date: IsoDate; now: Date }) {
               <DeleteBookingButton
                 key={editing.id}
                 booking={editing}
-                onDeleted={() => form.reset({ tone: 'success', title: 'Booking deleted' })}
+                onDeleted={form.reset}
               />
             )
           }

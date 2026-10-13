@@ -10,6 +10,7 @@ import {
   type BookingInput,
 } from '@/entities/booking'
 import { getErrorMessage, isConflictError, isNotFoundError } from '@/shared/api'
+import { toast } from '@/shared/ui'
 import type { HhMm, IsoDate } from '@/shared/lib/time'
 import { useSaveBooking } from './useSaveBooking'
 
@@ -17,9 +18,7 @@ export type BookingFormValues = { start: HhMm | ''; end: HhMm | ''; title: strin
 
 export type BookingFormMode = { type: 'create' } | { type: 'edit'; booking: Booking }
 
-export type FormFeedback =
-  | { tone: 'error' | 'warning'; title: string; message: string }
-  | { tone: 'success'; title: string; message?: string }
+export type FormFeedback = { tone: 'error' | 'warning'; title: string; message: string }
 
 const EMPTY: BookingFormValues = { start: '', end: '', title: '' }
 
@@ -29,6 +28,7 @@ export function useBookingForm({ date, bookings, now }: Params) {
   const [mode, setMode] = useState<BookingFormMode>({ type: 'create' })
   const [values, setValues] = useState<BookingFormValues>(EMPTY)
   const [submitAttempted, setSubmitAttempted] = useState(false)
+  const [focusRequest, setFocusRequest] = useState(0)
   const [feedback, setFeedback] = useState<FormFeedback | null>(null)
   const save = useSaveBooking()
 
@@ -80,21 +80,27 @@ export function useBookingForm({ date, bookings, now }: Params) {
     setFeedback(null)
     setSubmitAttempted(false)
     setValues((prev) => ({ ...prev, start, end: suggestEnd(date, start, ctx) }))
+    setFocusRequest((n) => n + 1)
   }
 
   function startEdit(booking: Booking) {
     if (isBookingLocked(booking, now)) return
     setMode({ type: 'edit', booking })
     setValues({ start: booking.start, end: booking.end, title: booking.title ?? '' })
+    setFocusRequest((n) => n + 1)
     setSubmitAttempted(false)
     setFeedback(null)
   }
 
-  function reset(nextFeedback: FormFeedback | null = null) {
+  function dismissFeedback() {
+    setFeedback(null)
+  }
+
+  function reset() {
     setMode({ type: 'create' })
     setValues(EMPTY)
     setSubmitAttempted(false)
-    setFeedback(nextFeedback)
+    setFeedback(null)
   }
 
   function submit() {
@@ -108,12 +114,13 @@ export function useBookingForm({ date, bookings, now }: Params) {
     save.mutate(
       { id, input: payload },
       {
-        onSuccess: (booking) =>
-          reset({
-            tone: 'success',
-            title: id ? 'Booking updated' : 'Room booked',
-            message: `${booking.start}–${booking.end}${booking.title ? ` · ${booking.title}` : ''}`,
-          }),
+        onSuccess: (booking) => {
+          reset()
+          toast(
+            id ? 'Booking updated' : 'Room booked',
+            `${booking.start}–${booking.end}${booking.title ? ` · ${booking.title}` : ''}`,
+          )
+        },
         onError: (error) => {
           if (isConflictError(error)) {
             setFeedback({
@@ -151,9 +158,11 @@ export function useBookingForm({ date, bookings, now }: Params) {
     setStart,
     setEnd,
     setTitle,
+    focusRequest,
     selectSlot,
     startEdit,
     reset,
+    dismissFeedback,
     submit,
   }
 }
