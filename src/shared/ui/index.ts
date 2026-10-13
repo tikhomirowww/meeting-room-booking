@@ -1,3 +1,6 @@
 export { Alert } from './Alert'
 export { Button } from './Button'
+export { Modal } from './Modal'
+export { Select } from './Select'
 export { Spinner } from './Spinner'
+export { toast, Toaster } from './toast'
