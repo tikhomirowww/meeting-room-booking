@@ -9,6 +9,7 @@ A UI for booking a single meeting room during the working day (09:00–18:00).
 ```bash
 npm install
 npm run dev        # http://localhost:5173
+npm run check      # typecheck + lint + unit tests
 npm test           # unit tests for the business rules (Vitest)
 npm run build      # typecheck + production build
 ```
@@ -57,6 +58,17 @@ src/
 - **Extension points:** multiple rooms would add `entities/room` + `features/room-select` and extend the query key with the room. Recurring bookings would be a new feature on top of the same rules.
 
 **Stack:** React 19, TypeScript (strict), Vite, Tailwind CSS v4, TanStack Query, MSW, Vitest.
+
+## Working with AI agents
+
+The repo ships its own harness for coding agents, so any agent (Claude Code, Codex, Cursor…) starts with the same knowledge and gets better over time:
+
+- **[`AGENTS.md`](AGENTS.md)** is the entry point: required reading, invariants that must not break, conventions, gotchas and a definition of done. [`CLAUDE.md`](CLAUDE.md) imports it, so there's one source.
+- **[`docs/`](docs/)** holds the details agents are pointed to: [architecture](docs/architecture.md) (layers, data flow, where to change what, recipes), [business rules](docs/business-rules.md) (each spec rule mapped to its code, HTTP status and test), [verification](docs/verification.md) and [ADRs](docs/adr/README.md) for the key decisions.
+- **Self-reflection memory.** [`docs/ai/lessons.md`](docs/ai/lessons.md) is a shared, versioned log of mistakes made in this repo. Each lesson records what happened, the root cause, the rule and the **guard** that now prevents it (a test, invariant or code). Lessons seen twice get promoted into invariants, ADRs or tests. The `/reflect` command ([`.claude/commands/reflect.md`](.claude/commands/reflect.md)) reviews recent commits against the log. The log holds ten real lessons from building this project. The tenth was found by `/reflect` itself: a fresh agent spotted an edge case in the hard-reload fix, which was then fixed and covered.
+- **`npm run check`** is the one command an agent runs before calling a task done.
+
+I checked the harness by asking a fresh agent, which had no conversation history and hadn't read any source files, how to forbid weekend bookings. Using the harness alone, it named the right files, explained what updates automatically and warned about the UTC date-parsing trap.
 
 ## Decisions on ambiguous points
 
