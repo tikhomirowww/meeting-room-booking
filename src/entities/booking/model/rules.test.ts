@@ -97,13 +97,13 @@ describe('isBookingLocked', () => {
 describe('options', () => {
   it('start slots: past and occupied are disabled', () => {
     const today = getStartOptions(TODAY, ctx())
-    expect(today.find((o) => o.value === '10:00')?.disabled).toBe(true)
+    expect(today.find((o) => o.value === '10:00')).toMatchObject({ disabled: true, reason: 'past' })
     expect(today.find((o) => o.value === '10:15')?.disabled).toBe(false)
     expect(today.at(-1)?.value).toBe('17:30')
 
     const tomorrow = getStartOptions(TOMORROW, ctx())
     expect(tomorrow.find((o) => o.value === '09:30')?.disabled).toBe(false)
-    expect(tomorrow.find((o) => o.value === '09:45')?.disabled).toBe(true)
+    expect(tomorrow.find((o) => o.value === '09:45')).toMatchObject({ disabled: true, reason: 'booked' })
     expect(tomorrow.find((o) => o.value === '10:45')?.disabled).toBe(true)
     expect(tomorrow.find((o) => o.value === '11:00')?.disabled).toBe(false)
   })

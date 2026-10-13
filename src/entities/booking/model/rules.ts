@@ -150,7 +150,9 @@ function stepRange(from: number, to: number): number[] {
   return result
 }
 
-export type TimeOption = { value: HhMm; disabled: boolean }
+export type TimeOptionReason = 'past' | 'booked' | 'unavailable'
+
+export type TimeOption = { value: HhMm; disabled: boolean; reason?: TimeOptionReason }
 
 /** Start time options: occupied and past times are disabled. */
 export function getStartOptions(
@@ -162,8 +164,9 @@ export function getStartOptions(
 
   return stepRange(DAY_START, DAY_END - MIN_DURATION_MINUTES).map((m) => {
     const minSlot = { start: fromMinutes(m), end: fromMinutes(m + MIN_DURATION_MINUTES) }
-    const disabled = m < earliest || others.some((b) => intervalsOverlap(minSlot, b))
-    return { value: fromMinutes(m), disabled }
+    const reason: TimeOptionReason | undefined =
+      m < earliest ? 'past' : others.some((b) => intervalsOverlap(minSlot, b)) ? 'booked' : undefined
+    return { value: fromMinutes(m), disabled: reason !== undefined, reason }
   })
 }
 
@@ -181,7 +184,11 @@ export function getEndOptions(
   const latest = Math.min(startMin + MAX_DURATION_MINUTES, DAY_END, nextBookingStart)
 
   return stepRange(startMin + MIN_DURATION_MINUTES, Math.min(startMin + MAX_DURATION_MINUTES, DAY_END))
-    .map((m) => ({ value: fromMinutes(m), disabled: m > latest }))
+    .map((m): TimeOption =>
+      m > latest
+        ? { value: fromMinutes(m), disabled: true, reason: 'unavailable' }
+        : { value: fromMinutes(m), disabled: false },
+    )
 }
 
 /** Suggested end: one hour, or as much as the constraints allow. */
