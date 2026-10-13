@@ -23,7 +23,8 @@ Read these before changing code. They're short.
 
 ```bash
 npm run dev     # http://localhost:5173
-npm run check   # typecheck + lint + unit tests — must pass before a task is done
+npm run check   # typecheck + lint + unit, component and integration tests, must pass before a task is done
+npm run e2e     # Playwright e2e + axe against a production build
 npm test        # unit tests only
 npm run build   # production build
 ```
@@ -47,6 +48,14 @@ npm run build   # production build
 - Prefer native elements (`<select>`, `<dialog>`, `<input type="date">`). Style with Tailwind in the component; put shared looks in `shared/ui`.
 - Accessibility: every field is labelled, errors are linked via `aria-describedby`, and visible text is part of the accessible name (add context with `sr-only`, not a different `aria-label`). The baseline is 0 axe-core violations.
 - Conventional Commits: `feat(scope): …`, `fix(a11y): …`, `docs: …`.
+- **One folder per component**, with the test next to it:
+  ```
+  ui/Button/
+    Button.tsx
+    Button.test.tsx
+    index.ts        # export { Button } from './Button'
+  ```
+  Logic tests are `*.test.ts` (Node), component and hook tests `*.test.tsx` (jsdom). Query by role and accessible name, not by class or test id.
 
 ## Gotchas
 
@@ -54,6 +63,9 @@ npm run build   # production build
 - **The mock db re-reads `localStorage` on every call**, which is how two tabs share state. Bump `STORAGE_KEY` in `mocks/db.ts` when the seed or shape changes (L-002, L-003).
 - `mockControls.readsFail` is persistent on purpose: TanStack Query retries 5xx once (L-004).
 - `noUncheckedIndexedAccess` is on, so `arr[0]` is `T | undefined`.
+- e2e freezes time at `2030-05-15T10:05Z` (`e2e/fixtures.ts`), and the seed is relative to it. Use `{ exact: true }` for short label names (L-007).
+- Mock handler paths are host-agnostic (`*/api/...`) so they match in the browser and in Node (`msw/node` contract tests).
+- Integration tests call `setupMockApi()` from `src/test/server.ts`: the mock API runs in Node, data is reset and `Date` is frozen at `NOW` for each test. jsdom lacks `dialog.showModal`, `matchMedia` and `scrollIntoView`, which are polyfilled in `src/test/setup.ts`.
 
 ## Memory and self-reflection
 
@@ -68,8 +80,8 @@ Record the trap and the why, not the diff. Personal preferences don't belong her
 
 ## Definition of done
 
-1. `npm run check` passes.
-2. New or changed rules have tests.
-3. The browser scenarios in `docs/verification.md` still work, including the 409 demo.
-4. No new axe-core violations; the keyboard-only flow works.
+1. `npm run check` and `npm run e2e` pass (CI runs both).
+2. New or changed behavior has a test at the right level (see the test levels in `docs/verification.md`): rule → `rules.test.ts`; API → `handlers.test.ts`; component → `Component.test.tsx`; layers working together → integration test with `setupMockApi()`; user journey → `e2e/`.
+3. A test added to prevent a bug has been **mutation-checked**: break the code, see it fail, restore (L-011).
+4. No new axe violations; the keyboard-only flow works.
 5. If something went wrong along the way, there's a lesson for it with a guard.

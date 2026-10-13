@@ -11,7 +11,10 @@ src/
   entities/   booking — types, business rules (model/), API + query hooks (api/)
   shared/     api (http client, typed errors), config, lib (time, react), ui (kit)
   mocks/      MSW handlers + localStorage "db" — backend emulation, outside the layers
+  test/       test setup and helpers (render with providers, mock API in Node), outside the layers
 ```
+
+Each UI component has its own folder (`ui/Button/Button.tsx`, `Button.test.tsx`, `index.ts`). Slice-level `index.ts` files re-export from those folders, so imports from outside a slice don't change when a component moves.
 
 ### Import rules
 
@@ -45,8 +48,8 @@ User clicks "Book"
 | Mock server behavior and status codes | `src/mocks/handlers.ts` |
 | Mock storage and seed data | `src/mocks/db.ts` (bump `STORAGE_KEY` when the shape or seed changes) |
 | Form behavior (submit, 409, focus) | `src/features/booking-form/model/useBookingForm.ts` |
-| Form markup, field errors, selects | `src/features/booking-form/ui/BookingForm.tsx` |
-| Timeline rendering | `src/widgets/day-schedule/ui/Timeline.tsx` |
+| Form markup, field errors, selects | `src/features/booking-form/ui/BookingForm/BookingForm.tsx` |
+| Timeline rendering | `src/widgets/day-schedule/ui/Timeline/Timeline.tsx` |
 | Dialogs, toasts, select, buttons | `src/shared/ui/` |
 
 ## UI feedback pattern

@@ -48,7 +48,7 @@ These lessons come from building this project. Each one names the guard that now
 - **What happened:** In production, Cmd+Shift+R showed "Could not load bookings": `GET /api/bookings` returned `404` from Vercel. A normal reload fixed it.
 - **Root cause:** By spec, a force reload loads the page without its service worker, so MSW didn't intercept anything.
 - **Rule:** With MSW in production, detect an uncontrolled page (`navigator.serviceWorker.controller`) and reload once, guarded against loops. Wait briefly for `controllerchange` first, because on a first visit the worker claims the page slightly after `start()`.
-- **Guard:** `enableMocking` in `src/main.tsx`, ADR-0001 and Gotchas in `AGENTS.md`. _Doc-only: checked with an emulated uncontrolled page, no automated test (see L-008)._
+- **Guard:** e2e `e2e/states.spec.ts` → "recovers when a hard reload leaves the page without the service worker" (emulates `controller === null`, expects exactly one recovery reload), plus `enableMocking` in `src/main.tsx` and ADR-0001.
 - **Seen:** 2026-10-13 (×1)
 
 ### L-006: Visible text must be part of the accessible name
@@ -57,7 +57,7 @@ These lessons come from building this project. Each one names the guard that now
 - **What happened:** axe-core flagged `label-content-name-mismatch`. Slots showed "+ 09:00–09:30" but were announced as "Book from 09:00", and booking blocks had an `aria-label` that differed from their text. Voice-control users couldn't activate them by what they saw.
 - **Root cause:** `aria-label` was used to add context, which replaced the visible text instead of extending it.
 - **Rule:** Don't put an `aria-label` that differs from the visible text on a control. Add context with `sr-only` spans.
-- **Guard:** Accessibility requirements in `AGENTS.md`, and the axe baseline of 0 violations in `docs/verification.md`. _Doc-only: axe runs manually, so a regression can slip through. Next step: axe in an automated e2e run._
+- **Guard:** e2e `e2e/accessibility.spec.ts` runs axe with `label-content-name-mismatch` explicitly enabled. It's mutation-checked: it fails when a slot gets a mismatching `aria-label` (see L-011).
 - **Seen:** 2026-10-13 (×1)
 
 ### L-007: Playwright `getByLabel` matches substrings
@@ -67,7 +67,7 @@ These lessons come from building this project. Each one names the guard that now
 - **Root cause:** By default, name matching is case-insensitive and substring-based.
 - **Rule:** Use `{ exact: true }` or a specific selector for short, common words. Treat a surprising test result as a possible locator bug before calling it an app bug.
 - **Guard:** Testing pitfalls in `docs/verification.md`.
-- **Seen:** 2026-10-13 (×2). Promotion candidate, blocked until e2e tests live in the repo.
+- **Seen:** 2026-10-13 (×2). **Promoted →** repo e2e tests use `{ exact: true }` and scoped locators (`e2e/fixtures.ts`).
 
 ### L-008: Make sure the reproduction actually reproduces
 
@@ -93,6 +93,24 @@ These lessons come from building this project. Each one names the guard that now
 - **What happened:** The L-005 fix set a `sessionStorage` flag before its one-time reload and cleared it only when the worker took control. If the page was still uncontrolled after that reload, the flag stayed set, and every later hard reload in that tab skipped the recovery.
 - **Root cause:** The guard was designed to stop an infinite loop, and nobody checked what state it leaves behind when the retry fails.
 - **Rule:** A retry guard must reset itself on every outcome: success, give-up and error. Ask what happens *after* the guarded path fails.
-- **Guard:** `enableMocking` in `src/main.tsx` clears the flag when it gives up. _Doc-only, no automated test._
+- **Guard:** `enableMocking` in `src/main.tsx` clears the flag when it gives up. The e2e hard-reload test asserts exactly one recovery reload, with no loop.
 - **Found by:** `/reflect`, run by a fresh agent with no conversation history.
+- **Seen:** 2026-10-13 (×1)
+
+### L-011: A green check proves nothing until you've seen it fail
+
+- **Area:** testing, a11y
+- **What happened:** The new e2e axe test passed. A mutation check (re-adding a mismatching `aria-label` to the slots) showed it still passed: the rule guarding L-006, `label-content-name-mismatch`, is tagged `experimental` in axe and is disabled by default, so the "guard" guarded nothing.
+- **Root cause:** It was assumed that tagging WCAG 2.1 A/AA runs every WCAG rule.
+- **Rule:** When you add a test as a guard, break the code it protects once and watch it fail. Then restore. Applies to unit, contract and e2e tests alike.
+- **Guard:** `label-content-name-mismatch` is enabled explicitly in `e2e/accessibility.spec.ts`. Mutation checking is part of the Definition of done in `AGENTS.md` and `docs/verification.md`.
+- **Seen:** 2026-10-13 (×1)
+
+### L-012: Don't restore a mutation with `git checkout` when the file has uncommitted work
+
+- **Area:** testing, tooling
+- **What happened:** After mutation-checking `BookingForm`, the file was restored with `git checkout`. That reverted it to the staged version, which predated an uncommitted import fix (`../model` → `../../model`) made after moving the component into its own folder. Typecheck and the production build broke, and only the e2e web server start revealed it.
+- **Root cause:** `git checkout <file>` restores from the index, not from "the state just before my mutation".
+- **Rule:** Before mutating, copy the file (or commit first), and restore from that copy. After restoring, run `npm run check` (it includes `tsc -b`), not just the targeted test.
+- **Guard:** The mutation-check note in `docs/verification.md`. _Doc-only._
 - **Seen:** 2026-10-13 (×1)

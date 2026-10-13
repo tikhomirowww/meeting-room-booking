@@ -9,8 +9,9 @@ A UI for booking a single meeting room during the working day (09:00–18:00).
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm run check      # typecheck + lint + unit tests
-npm test           # unit tests for the business rules (Vitest)
+npm run check      # typecheck + lint + unit and API contract tests (Vitest)
+npm run e2e        # end-to-end + accessibility tests (Playwright + axe) against a production build
+npm test           # unit tests only
 npm run build      # typecheck + production build
 ```
 
@@ -30,6 +31,19 @@ There is no backend. The API is emulated in the browser with [MSW](https://mswjs
 - Success feedback via auto-dismissing toasts. Errors that need a decision (conflicts, failed saves, delete confirmation) open in modal dialogs built on native `<dialog>`, which trap focus, close on Esc and return focus to the trigger.
 - Responsive layout: on mobile the form sits below the timeline, and picking a slot scrolls the form into view and focuses the title field.
 - Accessibility: [axe-core](https://github.com/dequelabs/axe-core) reports 0 WCAG 2.1 AA violations on desktop, on mobile, with validation errors shown and with a modal open. Every field has a label, errors are linked via `aria-describedby`, status messages use `aria-live`, focus is always visible, there's a "Skip to booking form" link, and the whole flow works from the keyboard. Visible text matches the accessible name, so voice control works too.
+
+### Tests
+
+Four levels, **130 Vitest tests + 19 Playwright tests**:
+
+| Level | What's covered |
+|---|---|
+| **Unit: logic** | Every business rule (numbered after the spec), the mock API contract via `msw/node` (all status and error codes), mock storage, the HTTP client's error handling, time utilities |
+| **Unit: components** | Every UI component, tested in isolation with Testing Library: the UI kit (Button, Alert, Modal, Select, Spinner, Toaster) and the widgets (DateNavigator, DaySchedule, Timeline) |
+| **Integration** | Layers working together against the mock API: `bookingApi` through the whole stack, `useBookingsQuery`, the form model and `BookingForm` (409 keeps input, 404 on edit), the delete flow, and the whole page |
+| **E2E** | Playwright against a production build: user journeys, 409 across two tabs, hard-reload recovery, keyboard and mobile, plus **axe accessibility scans** of four states |
+
+Each component lives in its own folder with its test (`Button/Button.tsx`, `Button.test.tsx`, `index.ts`). Time is frozen in tests, so results don't depend on when they run. Tests that guard known bugs were mutation-checked: the code was broken on purpose to confirm they fail. Everything runs in **GitHub Actions** on every push.
 
 ### Handling `409` conflicts
 
@@ -65,7 +79,7 @@ The repo ships its own harness for coding agents, so any agent (Claude Code, Cod
 
 - **[`AGENTS.md`](AGENTS.md)** is the entry point: required reading, invariants that must not break, conventions, gotchas and a definition of done. [`CLAUDE.md`](CLAUDE.md) imports it, so there's one source.
 - **[`docs/`](docs/)** holds the details agents are pointed to: [architecture](docs/architecture.md) (layers, data flow, where to change what, recipes), [business rules](docs/business-rules.md) (each spec rule mapped to its code, HTTP status and test), [verification](docs/verification.md) and [ADRs](docs/adr/README.md) for the key decisions.
-- **Self-reflection memory.** [`docs/ai/lessons.md`](docs/ai/lessons.md) is a shared, versioned log of mistakes made in this repo. Each lesson records what happened, the root cause, the rule and the **guard** that now prevents it (a test, invariant or code). Lessons seen twice get promoted into invariants, ADRs or tests. The `/reflect` command ([`.claude/commands/reflect.md`](.claude/commands/reflect.md)) reviews recent commits against the log. The log holds ten real lessons from building this project. The tenth was found by `/reflect` itself: a fresh agent spotted an edge case in the hard-reload fix, which was then fixed and covered.
+- **Self-reflection memory.** [`docs/ai/lessons.md`](docs/ai/lessons.md) is a shared, versioned log of mistakes made in this repo. Each lesson records what happened, the root cause, the rule and the **guard** that now prevents it (a test, invariant or code). Lessons seen twice get promoted into invariants, ADRs or tests. The `/reflect` command ([`.claude/commands/reflect.md`](.claude/commands/reflect.md)) reviews recent commits against the log. The log holds twelve real lessons from building this project. The tenth was found by `/reflect` itself: a fresh agent spotted an edge case in the hard-reload fix. The eleventh came from mutation-checking the new e2e suite, which showed the accessibility test was silently not guarding what it claimed to.
 - **`npm run check`** is the one command an agent runs before calling a task done.
 
 I checked the harness by asking a fresh agent, which had no conversation history and hadn't read any source files, how to forbid weekend bookings. Using the harness alone, it named the right files, explained what updates automatically and warned about the UTC date-parsing trap.
@@ -85,8 +99,6 @@ I checked the harness by asking a fresh agent, which had no conversation history
 
 Within the scope of the spec, these were left out to stay inside the timebox:
 
-- E2E tests in the repo (Playwright). The scenarios were checked with a one-off browser script, and accessibility with axe-core.
-- Component tests for the form (Testing Library). The business rules, where most of the risk is, are covered by unit tests.
 - Optimistic updates. The list is refetched after each mutation, which is simpler and more reliable for the 409 scenario.
 - ESLint rules for FSD boundaries (`eslint-plugin-boundaries`). Layers currently import each other only through public `index.ts` files by convention.
 - An indicator for a failed background refresh. If data is already loaded and a refetch fails, the last successful list stays on screen without a warning.
