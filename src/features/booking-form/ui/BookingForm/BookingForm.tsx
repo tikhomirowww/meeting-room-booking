@@ -10,7 +10,6 @@ type Props = {
   editActions?: ReactNode
 }
 
-
 export function BookingForm({ form, editActions }: Props) {
   const id = useId()
   const formRef = useRef<HTMLFormElement>(null)
@@ -23,6 +22,7 @@ export function BookingForm({ form, editActions }: Props) {
     formRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' })
     titleRef.current?.focus({ preventScroll: true })
   }, [form.focusRequest])
+
   const { values, mode, feedback, isReadOnlyDate, isSubmitting, hasFreeTime } = form
   const isEdit = mode.type === 'edit'
   const disabled = isReadOnlyDate || isSubmitting
@@ -37,7 +37,6 @@ export function BookingForm({ form, editActions }: Props) {
   )?.message
   const titleError = form.fieldError('title')
   const otherErrors = form.violations.filter((v) => v.field === 'date')
-  const serverError = feedback
 
   const describedBy = (fieldErrorId: string | false) =>
     [fieldErrorId, rangeError && `${id}-range-error`].filter(Boolean).join(' ') || undefined
@@ -50,7 +49,6 @@ export function BookingForm({ form, editActions }: Props) {
     values.start && toMinutes(value) > toMinutes(values.start)
       ? `${value} · ${formatDuration(toMinutes(value) - toMinutes(values.start))}`
       : value
-
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -75,17 +73,17 @@ export function BookingForm({ form, editActions }: Props) {
       </div>
 
       <Modal
-        open={!!serverError}
+        open={!!feedback}
         onClose={form.dismissFeedback}
-        tone={serverError?.tone === 'error' ? 'danger' : 'warning'}
-        title={serverError?.title ?? ''}
+        tone={feedback?.tone === 'error' ? 'danger' : 'warning'}
+        title={feedback?.title ?? ''}
         actions={
           <Button onClick={form.dismissFeedback} autoFocus>
             Got it
           </Button>
         }
       >
-        {serverError?.message}
+        {feedback?.message}
       </Modal>
 
       {isReadOnlyDate && (

@@ -12,7 +12,10 @@ const NO_BOOKINGS: Booking[] = []
 
 export function BookingPage() {
   const now = useNow()
-  const [date, setDate] = useState<IsoDate>(() => toIsoDate(new Date()))
+  const today = toIsoDate(now)
+  // null = "follow today", so an open tab moves to the new day after midnight.
+  const [pickedDate, setPickedDate] = useState<IsoDate | null>(null)
+  const date = pickedDate ?? today
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-10">
@@ -29,7 +32,7 @@ export function BookingPage() {
         </p>
       </header>
 
-      <DateNavigator date={date} now={now} onChange={setDate} />
+      <DateNavigator date={date} now={now} onChange={(next) => setPickedDate(next === today ? null : next)} />
 
       {/* key: changing the date resets the form state */}
       <BookingDay key={date} date={date} now={now} />

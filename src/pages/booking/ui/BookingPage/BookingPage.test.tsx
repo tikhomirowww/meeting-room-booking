@@ -1,8 +1,8 @@
 /**
  * Integration: the whole page (widgets + features + entities) against the mock API.
  */
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { Toaster } from '@/shared/ui'
 import { renderWithProviders } from '@/test/render'
 import { setupMockApi } from '@/test/server'
@@ -67,5 +67,31 @@ describe('BookingPage', () => {
     await user.click(screen.getByRole('button', { name: 'Next day' }))
     await screen.findByText('No bookings on this day — the room is free.')
     expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('')
+  })
+
+  describe('midnight', () => {
+    const freezeLateEvening = () => {
+      // Fake the interval too, so useNow's 30-second tick can be advanced.
+      vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] })
+      vi.setSystemTime(new Date(2030, 4, 15, 23, 59, 50))
+    }
+    const nav = () => screen.getByRole('navigation', { name: 'Choose day' })
+
+    it('an open tab on "today" moves to the new day', async () => {
+      freezeLateEvening()
+      await setup()
+      expect(nav()).toHaveTextContent('Wednesday, May 15')
+      act(() => vi.advanceTimersByTime(30_000))
+      expect(nav()).toHaveTextContent('Thursday, May 16')
+    })
+
+    it('a date picked by the user stays put', async () => {
+      freezeLateEvening()
+      const { user } = await setup()
+      await user.click(screen.getByRole('button', { name: 'Previous day' }))
+      expect(nav()).toHaveTextContent('Tuesday, May 14')
+      act(() => vi.advanceTimersByTime(30_000))
+      expect(nav()).toHaveTextContent('Tuesday, May 14')
+    })
   })
 })

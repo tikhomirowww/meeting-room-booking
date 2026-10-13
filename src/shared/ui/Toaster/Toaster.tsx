@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import { toastStore, type Toast } from './toastStore'
 
 const DURATION_MS = 2000
@@ -6,15 +6,16 @@ const DURATION_MS = 2000
 function ToastItem({ toast }: { toast: Toast }) {
   const timer = useRef<number | undefined>(undefined)
 
-  const start = () => {
+  const stop = useCallback(() => window.clearTimeout(timer.current), [])
+  const start = useCallback(() => {
+    stop()
     timer.current = window.setTimeout(() => toastStore.dismiss(toast.id), DURATION_MS)
-  }
-  const stop = () => window.clearTimeout(timer.current)
+  }, [stop, toast.id])
 
   useEffect(() => {
     start()
     return stop
-  }, [])
+  }, [start, stop])
 
   return (
     <li
