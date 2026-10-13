@@ -15,6 +15,8 @@ npm run build      # typecheck + production build
 
 There is no backend. The API is emulated in the browser with [MSW](https://mswjs.io), including on the deployed demo. Data is stored in `localStorage`, so it survives page reloads. Use "Reset demo data" to start over.
 
+> A hard reload (Cmd/Ctrl+Shift+R) loads the page without its service worker, so API calls would go to the static host and get a 404. The app detects an uncontrolled page and reloads once to hand control back to MSW. With a real backend this doesn't apply.
+
 ## What's done
 
 - Date selection: arrows, "Today" and a native date picker.
@@ -24,7 +26,9 @@ There is no backend. The API is emulated in the browser with [MSW](https://mswjs
 - Unavailable options in the time selects (past, occupied, invalid duration) are disabled, so an obviously invalid booking is hard to build.
 - UI states: loading skeleton, empty day, load error with "Retry", background refresh indicator, form locked while submitting.
 - Server error handling: `400` (validation), `404` (booking already deleted), `409` (conflict), `500` and network errors.
-- Responsive layout (the form moves below the timeline on mobile) and baseline accessibility: labels on every field, `aria-invalid`/`aria-describedby`, `aria-live` for messages, visible focus, full keyboard support.
+- Success feedback via auto-dismissing toasts. Errors that need a decision (conflicts, failed saves, delete confirmation) open in modal dialogs built on native `<dialog>`, which trap focus, close on Esc and return focus to the trigger.
+- Responsive layout: on mobile the form sits below the timeline, and picking a slot scrolls the form into view and focuses the title field.
+- Accessibility: [axe-core](https://github.com/dequelabs/axe-core) reports 0 WCAG 2.1 AA violations on desktop, on mobile, with validation errors shown and with a modal open. Every field has a label, errors are linked via `aria-describedby`, status messages use `aria-live`, focus is always visible, there's a "Skip to booking form" link, and the whole flow works from the keyboard. Visible text matches the accessible name, so voice control works too.
 
 ### Handling `409` conflicts
 
@@ -69,7 +73,6 @@ src/
 
 - E2E tests (Playwright). The scenarios were checked manually and with a one-off script.
 - Component tests for the form (Testing Library).
-- On mobile, scroll to the form after a slot is clicked.
 - Optimistic updates. The list is currently refetched after each mutation, which is more reliable for the 409 scenario.
 - ESLint rules for FSD boundaries (`eslint-plugin-boundaries`).
 - An indicator for a failed background refresh. If data is already loaded and a refetch fails, the last successful list is shown without a warning.
