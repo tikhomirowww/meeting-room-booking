@@ -9,6 +9,22 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   test: {
-    environment: 'node',
+    env: { VITE_API_URL: 'http://localhost' },
+    projects: [
+      // Pure logic: fast, no DOM.
+      { extends: true, test: { name: 'unit', environment: 'node', include: ['src/**/*.test.ts'] } },
+      // Components, hooks and integration tests.
+      {
+        extends: true,
+        test: {
+          name: 'dom',
+          environment: 'jsdom',
+          include: ['src/**/*.test.tsx'],
+          setupFiles: ['src/test/setup.ts'],
+          // jsdom + user-event start slowly when many files run in parallel.
+          testTimeout: 15_000,
+        },
+      },
+    ],
   },
 })

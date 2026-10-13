@@ -11,7 +11,7 @@ import { isValidDate } from '@/shared/lib/time'
 import { mockControls } from './controls'
 import { db } from './db'
 
-const LATENCY_MS = 500
+const LATENCY_MS = import.meta.env.MODE === 'test' ? 0 : 500
 
 function errorResponse(status: number, code: string, message: string, details?: unknown) {
   return HttpResponse.json({ code, message, details }, { status })
@@ -60,7 +60,7 @@ function save(input: Partial<BookingInput>, existing?: Booking) {
 }
 
 export const handlers = [
-  http.get('/api/bookings', async ({ request }) => {
+  http.get('*/api/bookings', async ({ request }) => {
     await delay(LATENCY_MS)
     if (mockControls.get('readsFail')) {
       return errorResponse(500, 'INTERNAL_ERROR', 'The server is temporarily unavailable. Please try again in a minute.')
@@ -72,14 +72,14 @@ export const handlers = [
     return HttpResponse.json(db.byDate(date))
   }),
 
-  http.post('/api/bookings', async ({ request }) => {
+  http.post('*/api/bookings', async ({ request }) => {
     await delay(LATENCY_MS)
     const input = pickInput(await request.json().catch(() => null))
     simulateConcurrentBooking(input)
     return save(input)
   }),
 
-  http.patch<{ id: string }>('/api/bookings/:id', async ({ request, params }) => {
+  http.patch<{ id: string }>('*/api/bookings/:id', async ({ request, params }) => {
     await delay(LATENCY_MS)
     const existing = db.find(params.id)
     if (!existing) return errorResponse(404, 'NOT_FOUND', 'Booking not found — it may have been deleted.')
@@ -91,7 +91,7 @@ export const handlers = [
     return save(input, existing)
   }),
 
-  http.delete<{ id: string }>('/api/bookings/:id', async ({ params }) => {
+  http.delete<{ id: string }>('*/api/bookings/:id', async ({ params }) => {
     await delay(LATENCY_MS)
     const existing = db.find(params.id)
     if (!existing) return errorResponse(404, 'NOT_FOUND', 'Booking not found — it may have been deleted.')
