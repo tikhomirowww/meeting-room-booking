@@ -71,13 +71,24 @@ src/
 
 ## Not done / next steps
 
-- E2E tests (Playwright). The scenarios were checked manually and with a one-off script.
-- Component tests for the form (Testing Library).
-- Optimistic updates. The list is currently refetched after each mutation, which is more reliable for the 409 scenario.
-- ESLint rules for FSD boundaries (`eslint-plugin-boundaries`).
-- An indicator for a failed background refresh. If data is already loaded and a refetch fails, the last successful list is shown without a warning.
-- `AGENTS.md`/`CLAUDE.md` with a layer map and rules for AI agents.
+Within the scope of the spec, these were left out to stay inside the timebox:
+
+- E2E tests in the repo (Playwright). The scenarios were checked with a one-off browser script, and accessibility with axe-core.
+- Component tests for the form (Testing Library). The business rules, where most of the risk is, are covered by unit tests.
+- Optimistic updates. The list is refetched after each mutation, which is simpler and more reliable for the 409 scenario.
+- ESLint rules for FSD boundaries (`eslint-plugin-boundaries`). Layers currently import each other only through public `index.ts` files by convention.
+- An indicator for a failed background refresh. If data is already loaded and a refetch fails, the last successful list stays on screen without a warning.
+
+## Future improvements
+
+Beyond the spec, this is what I'd do next for a real product:
+
+- **Authentication and ownership.** Right now anyone can edit or delete any booking. With auth, a booking gets an `ownerId`, and only the owner (and possibly invitees or an admin) can change it. The server would enforce this with `403`, and the UI would show other people's bookings as read-only, reusing the existing locked state.
+- **Multiple rooms.** Add `roomId` to `Booking` and to the query key, narrow overlap checks to the same room, and add `entities/room` + `features/room-select`. The timeline and all error handling stay the same. If rooms need different hours or duration limits, the global constants in `shared/config` become a per-room `BookingPolicy` passed to the rules through the existing context argument.
+- **Live updates.** Push changes over SSE/WebSocket so other users' bookings appear without a refetch. This makes `409` conflicts rarer, though the server check is still required.
+- **Drag to create and resize on the timeline.** Faster for mouse users, but it needs a keyboard alternative (WCAG 2.5.7), which the form already provides, and it must not fight with scrolling on touch devices.
+- **Recurring bookings and invitations.** New features built on the same validation rules.
 
 ## Time spent
 
-_TBD_
+About 1.5 hours of focused work: planning and architecture ~15 min, business rules and tests ~20 min, API layer and mock server ~15 min, UI ~25 min, polish (dialogs, toasts, accessibility audit, selects, hard-reload fix) and README ~25 min. Development was AI-assisted (Claude Code); the conversation log is attached as required.
