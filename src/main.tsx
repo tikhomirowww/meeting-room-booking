@@ -6,8 +6,10 @@ import '@/app/styles/index.css'
 async function enableMocking() {
   // No backend: the mock API runs in production too (demo). Set VITE_USE_MOCKS=false for a real API.
   if (import.meta.env.VITE_USE_MOCKS === 'false') return
-  const { worker } = await import('@/mocks/browser')
+  const { worker, keepMockingActive } = await import('@/mocks/browser')
   await worker.start({ quiet: true })
+  // Installed before React renders, so the first request already waits for the worker.
+  keepMockingActive()
 
   // A hard reload (Cmd+Shift+R) bypasses service workers, so requests would hit the real host and 404.
   // A normal reload hands control back to the worker; the flag prevents a reload loop.

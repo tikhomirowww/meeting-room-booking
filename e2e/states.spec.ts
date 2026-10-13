@@ -1,4 +1,4 @@
-import { enableScenario, expect, NOW, test, waitForSchedule } from './fixtures'
+import { bookingBlock, enableScenario, expect, goToNextDay, NOW, test, waitForSchedule } from './fixtures'
 
 test('empty day', async ({ app: page }) => {
   await page.getByLabel('Date', { exact: true }).fill('2030-05-20')
@@ -29,4 +29,28 @@ test('recovers when a hard reload leaves the page without the service worker (L-
   await page.goto('/')
   await waitForSchedule(page)
   expect(navigations).toBe(2) // initial load + exactly one recovery reload
+})
+
+test('keeps mocking after the browser stops an idle service worker (L-014)', async ({ app: page, context }) => {
+  // What Chrome does to an idle worker, e.g. in a background tab.
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('ServiceWorker.enable')
+  await cdp.send('ServiceWorker.stopAllWorkers')
+
+  // The user comes back to the tab.
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+
+  await goToNextDay(page)
+  await expect(bookingBlock(page, /Interview/)).toBeVisible()
+  await expect(page.getByText('Could not load bookings')).toHaveCount(0)
+})
+
+test('a click alone re-enables mocking after the worker was stopped (L-014)', async ({ app: page, context }) => {
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('ServiceWorker.enable')
+  await cdp.send('ServiceWorker.stopAllWorkers')
+
+  // No visibility or focus event, e.g. the laptop woke up with the tab already on screen.
+  await goToNextDay(page)
+  await expect(bookingBlock(page, /Interview/)).toBeVisible()
 })

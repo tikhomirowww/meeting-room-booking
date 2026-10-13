@@ -5,6 +5,8 @@ const PORT = 4173
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
+  // Several Chrome instances at once are heavy on an 8 GB laptop; CI uses Playwright's default.
+  workers: process.env.CI ? undefined : 2,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
