@@ -14,7 +14,10 @@ async function enableMocking() {
   const RELOAD_FLAG = 'msw:reloaded'
   if (await waitForController(1000)) {
     sessionStorage.removeItem(RELOAD_FLAG)
-  } else if (!sessionStorage.getItem(RELOAD_FLAG)) {
+  } else if (sessionStorage.getItem(RELOAD_FLAG)) {
+    // Already retried once: give up for this load, but let the next hard reload retry again.
+    sessionStorage.removeItem(RELOAD_FLAG)
+  } else {
     sessionStorage.setItem(RELOAD_FLAG, '1')
     window.location.reload()
     return new Promise<never>(() => {})
