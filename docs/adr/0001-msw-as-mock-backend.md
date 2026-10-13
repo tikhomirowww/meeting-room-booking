@@ -21,3 +21,4 @@ Mock the API with MSW (Mock Service Worker) running in the browser, in productio
 - The app calls real `fetch('/api/bookings')`. Switching to a backend means setting `VITE_API_URL` and `VITE_USE_MOCKS=false`.
 - Two tabs share one store, which gives a genuine cross-tab `409` (see L-002).
 - A hard reload bypasses service workers, so `main.tsx` reloads once if the page is uncontrolled (see L-005).
+- The browser stops idle workers, and a restarted worker forgets which tabs it mocks. Every `/api` request therefore waits for the worker to confirm the tab is registered, which costs one message round trip (see L-014).

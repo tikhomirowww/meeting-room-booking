@@ -78,6 +78,7 @@ Routine read-only and test commands are pre-allowed in `.claude/settings.json`, 
 ## Gotchas
 
 - **Hard reload bypasses the service worker.** `main.tsx` reloads once if the page is uncontrolled. Don't remove it (L-005).
+- **The browser stops idle service workers**, and the restarted worker forgets its tabs. `keepMockingActive()` in `mocks/browser.ts` makes each `/api` request wait for the worker's acknowledgement. Don't replace it with fire-and-forget messages, which race (L-014).
 - **The mock db re-reads `localStorage` on every call**, which is how two tabs share state. Bump `STORAGE_KEY` in `mocks/db.ts` when the seed or shape changes (L-002, L-003).
 - `mockControls.readsFail` is persistent on purpose: TanStack Query retries 5xx once (L-004).
 - `noUncheckedIndexedAccess` is on, so `arr[0]` is `T | undefined`.

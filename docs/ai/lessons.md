@@ -124,3 +124,12 @@ These lessons come from building this project. Each one names the guard that now
 - **Recurred (×2):** A reviewer re-ran the probes. The fix had only rewritten patterns shaped like `@/word*`, so `@/shared/api*` and `../api*` in the `rules.ts` override were still broken: `@/shared/api/http` and `../api/bookingApi` passed. The earlier claim "all rules were probed" was false, because `rules.ts` had been probed with a single import. Relative paths (`../../../mocks/db`) bypassed every rule, since the patterns covered only `@/`.
 - **Guard:** **Promoted →** glob patterns were replaced by `scripts/check-boundaries.mjs`, which resolves each import to a real path. Model files use an allowlist instead of a denylist. 36+ probe tests in `scripts/check-boundaries.test.ts` cover every bypass found so far and run in `npm run check` and CI. The checker was mutation-checked: disabling relative-path resolution fails the probes.
 - **Seen:** 2026-10-13 (×2)
+
+### L-014: A restarted service worker forgets its tabs, and fire-and-forget re-activation races
+
+- **Area:** mocks
+- **What happened:** A tab left open for a while started showing "Could not load bookings", with `Failed to fetch` coming from `mockServiceWorker.js`. A reload fixed it. Chrome stops idle service workers, and background tabs throttle MSW's 5-second keepalive timer. The restarted worker's in-memory `activeClientIds` was empty, so `/api` requests went to the real host (404 on Vercel, `index.html` in dev). The first fix re-sent `MOCK_ACTIVATE` on `visibilitychange`, `focus` and clicks. A probe then showed that a request sent right after still slipped past, because the worker registers the tab only after an `await`.
+- **Root cause:** Mock state that lives only in the worker's memory, plus treating "message sent" as "message handled".
+- **Rule:** Never assume a service worker is alive or remembers anything between events. When ordering matters, wait for an acknowledgement (`MOCKING_ENABLED`) instead of firing and hoping.
+- **Guard:** `keepMockingActive()` in `src/mocks/browser.ts` makes every `/api` request wait for the worker's confirmation. Two e2e tests in `e2e/states.spec.ts` stop the worker through CDP, as Chrome does, and assert the schedule still loads: once after the tab returns, and once on an immediate click. The click test failed against the fire-and-forget version.
+- **Seen:** 2026-10-13 (×1)

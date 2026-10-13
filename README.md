@@ -17,7 +17,7 @@ npm run build      # typecheck + production build
 
 There is no backend. The API is emulated in the browser with [MSW](https://mswjs.io), including on the deployed demo. Data is stored in `localStorage`, so it survives page reloads. Use "Reset demo data" to start over.
 
-> A hard reload (Cmd/Ctrl+Shift+R) loads the page without its service worker, so API calls would go to the static host and get a 404. The app detects an uncontrolled page and reloads once to hand control back to MSW. With a real backend this doesn't apply.
+> A hard reload (Cmd/Ctrl+Shift+R) loads the page without its service worker, so API calls would go to the static host and get a 404. The app detects an uncontrolled page and reloads once to hand control back to MSW. Separately, the browser stops idle service workers, and a restarted worker forgets which tabs it serves. So every API request first waits for the worker to confirm this tab is registered. Without that, a tab left open would start showing load errors. With a real backend neither applies.
 
 ## What's done
 
@@ -34,14 +34,14 @@ There is no backend. The API is emulated in the browser with [MSW](https://mswjs
 
 ### Tests
 
-Four levels, **130 Vitest tests + 19 Playwright tests**:
+Four levels, **171 Vitest tests + 21 Playwright tests**:
 
 | Level | What's covered |
 |---|---|
 | **Unit: logic** | Every business rule (numbered after the spec), the mock API contract via `msw/node` (all status and error codes), mock storage, the HTTP client's error handling, time utilities |
 | **Unit: components** | Every UI component, tested in isolation with Testing Library: the UI kit (Button, Alert, Modal, Select, Spinner, Toaster) and the widgets (DateNavigator, DaySchedule, Timeline) |
 | **Integration** | Layers working together against the mock API: `bookingApi` through the whole stack, `useBookingsQuery`, the form model and `BookingForm` (409 keeps input, 404 on edit), the delete flow, and the whole page |
-| **E2E** | Playwright against a production build: user journeys, 409 across two tabs, hard-reload recovery, keyboard and mobile, plus **axe accessibility scans** of four states |
+| **E2E** | Playwright against a production build: user journeys, 409 across two tabs, hard-reload and idle-worker recovery, keyboard and mobile, plus **axe accessibility scans** of four states |
 
 Each component lives in its own folder with its test (`Button/Button.tsx`, `Button.test.tsx`, `index.ts`). Time is frozen in tests, so results don't depend on when they run. Tests that guard known bugs were mutation-checked: the code was broken on purpose to confirm they fail. Everything runs in **GitHub Actions** on every push.
 
@@ -79,7 +79,7 @@ The repo ships its own harness for coding agents, so any agent (Claude Code, Cod
 
 - **[`AGENTS.md`](AGENTS.md)** is the entry point: required reading, invariants that must not break, conventions, gotchas and a definition of done. [`CLAUDE.md`](CLAUDE.md) imports it, so there's one source.
 - **[`docs/`](docs/)** holds the details agents are pointed to: [architecture](docs/architecture.md) (layers, data flow, where to change what, recipes), [business rules](docs/business-rules.md) (each spec rule mapped to its code, HTTP status and test), [verification](docs/verification.md) and [ADRs](docs/adr/README.md) for the key decisions.
-- **Self-reflection memory.** [`docs/ai/lessons.md`](docs/ai/lessons.md) is a shared, versioned log of mistakes made in this repo. Each lesson records what happened, the root cause, the rule and the **guard** that now prevents it (a test, invariant or code). Lessons seen twice get promoted into invariants, ADRs or tests. The `/reflect` command ([`.claude/commands/reflect.md`](.claude/commands/reflect.md)) reviews recent commits against the log. The log holds thirteen real lessons from building this project. The tenth was found by `/reflect` itself: a fresh agent spotted an edge case in the hard-reload fix. The eleventh came from mutation-checking the new e2e suite, which showed the accessibility test was silently not guarding what it claimed to.
+- **Self-reflection memory.** [`docs/ai/lessons.md`](docs/ai/lessons.md) is a shared, versioned log of mistakes made in this repo. Each lesson records what happened, the root cause, the rule and the **guard** that now prevents it (a test, invariant or code). Lessons seen twice get promoted into invariants, ADRs or tests. The `/reflect` command ([`.claude/commands/reflect.md`](.claude/commands/reflect.md)) reviews recent commits against the log. The log holds fourteen real lessons from building this project. The tenth was found by `/reflect` itself: a fresh agent spotted an edge case in the hard-reload fix. The eleventh came from mutation-checking the new e2e suite, which showed the accessibility test was silently not guarding what it claimed to.
 - **Machine enforcement, not just text.** The architecture invariants are enforced by `scripts/check-boundaries.mjs`. It resolves every import, aliased or relative, to a real path and checks FSD layers, public APIs and pure business rules (an allowlist of imports for model files, `Date` only as a type). Its own probe tests prove that every known bypass is rejected. `npm run check` fails on any lint warning. Claude Code **hooks** in `.claude/settings.json` lint every edited file immediately and block the agent from finishing while `npm run check` fails, so the definition of done is enforced, not requested. Read-only and test commands are pre-allowed to cut permission prompts.
 - **The log stays small.** Active lessons are capped at about 15. Machine-guarded lessons that stay quiet for 30 days move to `docs/ai/lessons-archive.md` with their numbers kept.
 
@@ -117,4 +117,4 @@ Beyond the spec, this is what I'd do next for a real product:
 
 ## Time spent
 
-About 1.5 hours of focused work: planning and architecture ~15 min, business rules and tests ~20 min, API layer and mock server ~15 min, UI ~25 min, polish (dialogs, toasts, accessibility audit, selects, hard-reload fix) and README ~25 min. Development was AI-assisted (Claude Code); the conversation log is attached as required.
+About 4 hours: planning and architecture, business rules with tests, API layer and mock server, UI, then polish (dialogs, toasts, accessibility, selects), the test suite (unit, component, integration, e2e) with CI, and the AI harness. Development was AI-assisted (Claude Code); the conversation log is attached as required.

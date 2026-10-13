@@ -34,7 +34,7 @@ Test helpers live in `src/test/`: `setup.ts` (jest-dom, cleanup, jsdom polyfills
 | Page integration | `src/pages/booking/ui/BookingPage/BookingPage.test.tsx`, `src/app/App.test.tsx` | Whole screen: book via timeline, edit → delete, date change resets the form |
 | E2E: flows | `e2e/booking-flow.spec.ts` | Create, edit, delete, cancel, validation, past/booked options, durations, read-only past date |
 | E2E: conflicts | `e2e/conflicts.spec.ts` | 409 dialog with input kept, real 409 between two tabs |
-| E2E: states | `e2e/states.spec.ts` | Empty day, load error → Retry, hard-reload recovery |
+| E2E: states | `e2e/states.spec.ts` | Empty day, load error → Retry, hard-reload recovery, mocking survives the browser stopping the idle service worker |
 | E2E: accessibility | `e2e/accessibility.spec.ts` | axe (WCAG 2.1 AA + best practices) on main, errors, dialog and mobile; skip link; mobile focus; no horizontal scroll |
 
 Determinism: unit tests inject "now"; e2e freezes the page clock at `2030-05-15T10:05Z` (UTC), and since the mock server runs in the page, UI and server share that "now". Each e2e test gets a fresh browser context, so it starts from a fresh seed.
