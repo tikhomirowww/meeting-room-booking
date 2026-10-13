@@ -8,6 +8,33 @@ async function enableMocking() {
   if (import.meta.env.VITE_USE_MOCKS === 'false') return
   const { worker } = await import('@/mocks/browser')
   await worker.start({ quiet: true })
+
+  // A hard reload (Cmd+Shift+R) bypasses service workers, so requests would hit the real host and 404.
+  // A normal reload hands control back to the worker; the flag prevents a reload loop.
+  const RELOAD_FLAG = 'msw:reloaded'
+  if (await waitForController(1000)) {
+    sessionStorage.removeItem(RELOAD_FLAG)
+  } else if (!sessionStorage.getItem(RELOAD_FLAG)) {
+    sessionStorage.setItem(RELOAD_FLAG, '1')
+    window.location.reload()
+    return new Promise<never>(() => {})
+  }
+}
+
+// On a first visit the worker claims the page a moment after start() resolves.
+function waitForController(timeoutMs: number): Promise<boolean> {
+  if (navigator.serviceWorker.controller) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    const timer = window.setTimeout(() => resolve(false), timeoutMs)
+    navigator.serviceWorker.addEventListener(
+      'controllerchange',
+      () => {
+        window.clearTimeout(timer)
+        resolve(true)
+      },
+      { once: true },
+    )
+  })
 }
 
 enableMocking().then(() => {
