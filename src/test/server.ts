@@ -23,6 +23,7 @@ export function setupMockApi() {
   })
   afterEach(() => {
     server.resetHandlers()
+    server.events.removeAllListeners()
     vi.useRealTimers()
   })
   afterAll(() => server.close())
